@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./reachout.db"
 
-    # Supabase
-    SUPABASE_URL: str = "https://mock.supabase.co"
+    # Supabase (Project ID: bqwmgdxaynsxabgxgnos)
+    SUPABASE_URL: str = "https://bqwmgdxaynsxabgxgnos.supabase.co"
     SUPABASE_ANON_KEY: str = "mock-anon-key"
     SUPABASE_SERVICE_ROLE_KEY: str = "mock-service-role-key"
 

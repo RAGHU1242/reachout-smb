@@ -14,11 +14,13 @@ async def test_multi_tenant_channel_isolation(async_client: AsyncClient):
     - Incoming webhook for IG_B routes ONLY to Business B
     - Conversations and messages never leak across businesses
     """
+    import uuid
+    uid = uuid.uuid4().hex[:8]
     async with AsyncSessionLocal() as session:
         # Create Business A
         biz_a = Business(
-            name="Business A Boutique",
-            slug="business-a-boutique",
+            name=f"Business A Boutique {uid}",
+            slug=f"business-a-{uid}",
             location="Hyderabad",
             city="Hyderabad",
             languages=["Telugu", "English"],
@@ -26,8 +28,8 @@ async def test_multi_tenant_channel_isolation(async_client: AsyncClient):
         )
         # Create Business B
         biz_b = Business(
-            name="Business B Sarees",
-            slug="business-b-sarees",
+            name=f"Business B Sarees {uid}",
+            slug=f"business-b-{uid}",
             location="Secunderabad",
             city="Secunderabad",
             languages=["Telugu", "English"],
@@ -40,13 +42,13 @@ async def test_multi_tenant_channel_isolation(async_client: AsyncClient):
         chan_a = ChannelAccount(
             business_id=biz_a.id,
             channel="INSTAGRAM",
-            account_id="ig_account_alpha_999",
+            account_id=f"ig_account_alpha_{uid}",
             username="biz_a_insta"
         )
         chan_b = ChannelAccount(
             business_id=biz_b.id,
             channel="INSTAGRAM",
-            account_id="ig_account_beta_888",
+            account_id=f"ig_account_beta_{uid}",
             username="biz_b_insta"
         )
         session.add_all([chan_a, chan_b])
@@ -59,14 +61,14 @@ async def test_multi_tenant_channel_isolation(async_client: AsyncClient):
         "object": "instagram",
         "entry": [
             {
-                "id": "entry_a",
+                "id": f"entry_a_{uid}",
                 "time": 1773800000,
                 "messaging": [
                     {
-                        "sender": {"id": "customer_user_101"},
-                        "recipient": {"id": "ig_account_alpha_999"},
+                        "sender": {"id": f"customer_user_101_{uid}"},
+                        "recipient": {"id": f"ig_account_alpha_{uid}"},
                         "message": {
-                            "mid": "m_test_msg_alpha_101",
+                            "mid": f"m_test_msg_alpha_{uid}",
                             "text": "Hello Business A, red saree undha?"
                         }
                     }
@@ -82,14 +84,14 @@ async def test_multi_tenant_channel_isolation(async_client: AsyncClient):
         "object": "instagram",
         "entry": [
             {
-                "id": "entry_b",
+                "id": f"entry_b_{uid}",
                 "time": 1773800001,
                 "messaging": [
                     {
-                        "sender": {"id": "customer_user_202"},
-                        "recipient": {"id": "ig_account_beta_888"},
+                        "sender": {"id": f"customer_user_202_{uid}"},
+                        "recipient": {"id": f"ig_account_beta_{uid}"},
                         "message": {
-                            "mid": "m_test_msg_beta_202",
+                            "mid": f"m_test_msg_beta_{uid}",
                             "text": "Hello Business B, what are your store timings?"
                         }
                     }
@@ -121,8 +123,8 @@ async def test_multi_tenant_channel_isolation(async_client: AsyncClient):
         cust_b = await session.get(Customer, list_b[0].customer_id)
         assert cust_a.business_id == biz_a_id
         assert cust_b.business_id == biz_b_id
-        assert cust_a.phone == "customer_user_101"
-        assert cust_b.phone == "customer_user_202"
+        assert cust_a.phone == f"customer_user_101_{uid}"
+        assert cust_b.phone == f"customer_user_202_{uid}"
 
         # Cross-leak check: Neither conversation contains the other's business_id
         assert list_a[0].business_id != list_b[0].business_id

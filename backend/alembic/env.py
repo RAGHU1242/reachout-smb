@@ -18,7 +18,9 @@ if config.config_file_name is not None:
 
 # Ensure sync URL for alembic migrations
 db_url = settings.DATABASE_URL
-if db_url.startswith("postgres://"):
+if "[YOUR-PASSWORD]" in db_url:
+    db_url = "sqlite:///./reachout.db"
+elif db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 elif db_url.startswith("sqlite+aiosqlite:"):
     db_url = db_url.replace("sqlite+aiosqlite:", "sqlite:")
