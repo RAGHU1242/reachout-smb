@@ -15,11 +15,21 @@ connect_args = {}
 if "sqlite" in database_url:
     connect_args = {"check_same_thread": False}
 
+engine_kwargs = {
+    "echo": False,
+    "future": True,
+    "connect_args": connect_args
+}
+if "sqlite" not in database_url:
+    engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_size": 10,
+        "max_overflow": 20
+    })
+
 engine = create_async_engine(
     database_url,
-    echo=False,
-    future=True,
-    connect_args=connect_args
+    **engine_kwargs
 )
 
 AsyncSessionLocal = async_sessionmaker(

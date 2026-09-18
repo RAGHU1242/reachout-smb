@@ -10,12 +10,30 @@ from app.main import app
 from app.database.session import AsyncSessionLocal, engine
 from app.models.base import Base
 
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.pool import NullPool
+from app.core.config import settings
+from app.database.session import get_db
+
+# Use NullPool for pytest so connections are not held across closed event loops
+test_engine = create_async_engine(
+    settings.DATABASE_URL,
+    poolclass=NullPool,
+    echo=False
+)
+TestSessionLocal = async_sessionmaker(bind=test_engine, class_=AsyncSession, expire_on_commit=False)
+
+async def override_get_db():
+    async with TestSessionLocal() as session:
+        yield session
+
+app.dependency_overrides[get_db] = override_get_db
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def prepare_database():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     yield
-    # Cleanup if needed
+    await test_engine.dispose()
 
 @pytest_asyncio.fixture
 async def async_client():
@@ -25,5 +43,5 @@ async def async_client():
 
 @pytest_asyncio.fixture
 async def db_session():
-    async with AsyncSessionLocal() as session:
+    async with TestSessionLocal() as session:
         yield session

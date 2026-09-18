@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
-from app.database.session import AsyncSessionLocal
+from conftest import TestSessionLocal as AsyncSessionLocal
 from app.models.models import Business, ChannelAccount, Conversation, Customer
 
 @pytest.mark.asyncio
