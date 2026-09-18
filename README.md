@@ -14,7 +14,7 @@ ReachOut SMB is a multi-tenant SaaS application that enables small and medium bu
 - **Deterministic Order State Machine**: Strict status transitions (`NEW` &rarr; `CONFIRMED` &rarr; `PROCESSING` &rarr; `SHIPPED` &rarr; `DELIVERED`).
 - **Locality-Based Delivery Engine**: Configurable delivery zones (e.g. Miyapur ₹50, Kukatpally ₹50) with automated free delivery thresholds.
 - **AI-Assisted Lead Scoring**: Automatically scores incoming customer intent (0–100) and categorizes leads into Hot, Warm, Cold, and Converted.
-- **Meta Graph API v21.0+ Architecture**: Production-grade adapters for Instagram Messaging and WhatsApp Cloud API with HMAC SHA-256 signature verification and replay-safe idempotency.
+- **Meta Graph API v26.0 Architecture**: Production-grade adapters for Instagram Messaging and WhatsApp Cloud API with HMAC SHA-256 signature verification, replay-safe idempotency, and strict tenant routing.
 - **Interactive Multi-Channel Simulator (`/dev/simulator`)**: Complete testbed for verifying the full conversational sales funnel offline without Meta credentials.
 
 ---
@@ -25,6 +25,7 @@ ReachOut SMB is a multi-tenant SaaS application that enables small and medium bu
 
 - Python 3.11+
 - Node.js 20+
+- (Optional) Docker & Docker Compose
 
 ### 2. Backend Setup
 
@@ -43,18 +44,24 @@ alembic -c alembic.ini upgrade head
 python scripts/seed_demo_data.py
 
 # Start FastAPI server
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+.venv\Scripts\uvicorn --app-dir backend app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-API Documentation will be live at `http://localhost:8000/docs`.
+API Documentation is live at `http://localhost:8000/docs`.
 
 ### 3. Frontend Setup
 
 ```bash
 cd frontend
 npm install
-npm run dev
+node "node_modules/next/dist/bin/next" dev -p 3000
 ```
-Dashboard will be live at `http://localhost:3000`.
+Dashboard is live at `http://localhost:3000`.
+
+### 4. Or Run Full Stack via Docker Compose
+
+```bash
+docker-compose up --build
+```
 
 ---
 
@@ -64,7 +71,7 @@ Dashboard will be live at `http://localhost:3000`.
 - **Password**: `password123`
 - **Business**: Rani Fashions (Hyderabad)
 
-Or use the **"Use Demo Account"** button on the `/login` page.
+Or click **"Use Demo Account"** on the `/login` page.
 
 ---
 
@@ -78,9 +85,9 @@ Or use the **"Use Demo Account"** button on the `/login` page.
    - Customer sends: *"Delivery Miyapur?"*
    - AI calls `calculate_delivery`, returns ₹50 delivery charge.
 4. Click **"Step 3: Book Order"**:
-   - Customer sends: *"Okay book chesthara. Flat 304, Sri Sai Residency, Miyapur, Hyderabad"*
+   - Customer sends: *"Okay book it. Flat 304, Miyapur, Hyderabad"*
    - AI calls `create_order`, books the order, decrements inventory, and outputs order number (`RO-...`).
-5. Open `/dashboard` or `/orders` to verify the new order!
+5. Open `/dashboard` or `/orders` to verify the new order appears in the real database table!
 
 ---
 
@@ -91,14 +98,16 @@ Or use the **"Use Demo Account"** button on the `/login` page.
 pytest tests/ -v
 ```
 
-All 7 test suites validate:
-- Conversational sales agent Telugu & English flow
-- Automatic human handoff escalation
-- Tenant authorization & data isolation (HTTP 403)
-- Locality delivery fee & free delivery threshold
-- Instagram webhook challenge
-- WhatsApp Cloud API challenge
-- Duplicate webhook idempotency
+All 9 test suites validate:
+1. `test_critical_conversational_sales_flow`: Telugu inquiry -> image response -> Miyapur delivery calculation -> order booking.
+2. `test_human_handoff_escalation`: Automatic human handoff escalation when user asks for human/complaint.
+3. `test_multilingual_sales_intents`: Natural sales phrases ('red saree under 1500', 'UPI chestha', 'tomorrow kavali').
+4. `test_auth_and_tenant_isolation`: Cross-tenant access blocked (HTTP 403).
+5. `test_multi_tenant_channel_isolation`: Channel A & Channel B routing isolation across separate businesses.
+6. `test_delivery_calculation_and_orders`: Pincode/locality calculation, free delivery threshold, deterministic order state machine and rejection of invalid status transitions.
+7. `test_instagram_webhook_challenge`: Meta challenge verification for Instagram.
+8. `test_whatsapp_webhook_challenge`: Meta challenge verification for WhatsApp.
+9. `test_webhook_idempotency`: Duplicate webhook payload deduplication.
 
 ---
 
