@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: reachout_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: reachout_user
+      POSTGRES_PASSWORD: reachout_password_2026
+      POSTGRES_DB: reachout_smb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: reachout_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://reachout_user:reachout_password_2026@postgres:5432/reachout_smb
+      ENVIRONMENT: production
+      META_GRAPH_API_VERSION: v26.0
+      MOCK_AI: "true"
+      MOCK_INSTAGRAM: "true"
+      MOCK_WHATSAPP: "true"
+      MOCK_PAYMENTS: "true"
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      BACKEND_PUBLIC_URL: http://localhost:8000
+      JWT_SECRET: reachout-smb-secure-jwt-secret-key-production-2026
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: reachout_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

@@ -73,3 +73,30 @@ async def test_delivery_calculation_and_orders(async_client: AsyncClient):
     )
     assert update_res.status_code == 200
     assert update_res.json()["status"] == "PROCESSING"
+
+    # 9. Test invalid transition: Jump from PROCESSING to DELIVERED without SHIPPED -> MUST BE 400 BAD REQUEST
+    invalid_res = await async_client.put(
+        f"/api/v1/orders/{created_order['id']}/status",
+        json={"status": "DELIVERED"},
+        headers=headers
+    )
+    assert invalid_res.status_code == 400
+    assert "Invalid order status transition" in invalid_res.json()["detail"]
+
+    # 10. Test valid transition: PROCESSING -> SHIPPED -> DELIVERED
+    shipped_res = await async_client.put(
+        f"/api/v1/orders/{created_order['id']}/status",
+        json={"status": "SHIPPED"},
+        headers=headers
+    )
+    assert shipped_res.status_code == 200
+    assert shipped_res.json()["status"] == "SHIPPED"
+
+    delivered_res = await async_client.put(
+        f"/api/v1/orders/{created_order['id']}/status",
+        json={"status": "DELIVERED"},
+        headers=headers
+    )
+    assert delivered_res.status_code == 200
+    assert delivered_res.json()["status"] == "DELIVERED"
+    assert delivered_res.json()["payment_status"] == "PAID"

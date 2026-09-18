@@ -77,3 +77,58 @@ async def test_human_handoff_escalation(async_client: AsyncClient):
     assert sim_res.status_code == 200
     out = sim_res.json()
     assert "request_human_handoff" in out["tool_calls_executed"]
+
+@pytest.mark.asyncio
+async def test_multilingual_sales_intents(async_client: AsyncClient):
+    """
+    Validates various natural sales phrases:
+    - 'red saree under 1500'
+    - 'UPI chestha'
+    - 'tomorrow kavali'
+    """
+    # 1. Budget & color search: "red saree under 1500"
+    res1 = await async_client.post(
+        "/api/v1/simulator/message",
+        json={
+            "channel": "INSTAGRAM",
+            "customer_name": "Pooja Sharma",
+            "customer_phone": "+919876543210",
+            "message": "red saree under 1500"
+        }
+    )
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert "search_products" in data1["tool_calls_executed"]
+    assert len(data1["recommended_products"]) > 0
+    assert data1["recommended_products"][0]["price"] <= 1500.0
+
+    # 2. Payment method inquiry: "UPI chestha"
+    res2 = await async_client.post(
+        "/api/v1/simulator/message",
+        json={
+            "channel": "WHATSAPP",
+            "customer_name": "Pooja Sharma",
+            "customer_phone": "+919876543210",
+            "message": "UPI chestha"
+        }
+    )
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert "get_business_information" in data2["tool_calls_executed"]
+    assert any(term in data2["ai_response"]["content"] for term in ["UPI", "Google Pay", "PhonePe"])
+
+    # 3. Delivery timeline inquiry: "tomorrow kavali"
+    res3 = await async_client.post(
+        "/api/v1/simulator/message",
+        json={
+            "channel": "WHATSAPP",
+            "customer_name": "Pooja Sharma",
+            "customer_phone": "+919876543210",
+            "message": "tomorrow kavali"
+        }
+    )
+    assert res3.status_code == 200
+    data3 = res3.json()
+    assert "get_business_information" in data3["tool_calls_executed"]
+    assert any(term in data3["ai_response"]["content"].lower() for term in ["same day", "next day", "డెలివరీ"])
+

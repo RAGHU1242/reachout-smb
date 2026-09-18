@@ -17,7 +17,7 @@ class MetaInstagramProvider(InstagramProvider):
     ):
         self.access_token = access_token
         self.app_secret = app_secret or settings.META_APP_SECRET
-        self.api_version = api_version or settings.META_GRAPH_API_VERSION or "v21.0"
+        self.api_version = api_version or settings.META_GRAPH_API_VERSION or "v26.0"
         self.base_url = f"https://graph.facebook.com/{self.api_version}"
 
     def verify_webhook_signature(self, payload_bytes: bytes, signature_header: Optional[str]) -> bool:

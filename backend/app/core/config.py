@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
 
+    ENVIRONMENT: str = "development"
+
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./reachout.db"
 
@@ -21,10 +23,10 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
-    # Meta Platform
+    # Meta Platform (Graph API v26.0 current official supported version)
     META_APP_ID: Optional[str] = None
     META_APP_SECRET: Optional[str] = None
-    META_GRAPH_API_VERSION: str = "v21.0"
+    META_GRAPH_API_VERSION: str = "v26.0"
 
     # Instagram
     INSTAGRAM_VERIFY_TOKEN: str = "reachout_instagram_verify_token_2026"

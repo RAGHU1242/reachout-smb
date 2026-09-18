@@ -143,7 +143,22 @@ async def update_order_status(
 
     new_status = data.status.upper()
     valid_next = VALID_TRANSITIONS.get(order.status, [])
-    # Allow admin override or valid state transition
+    if new_status not in valid_next:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid order status transition from '{order.status}' to '{new_status}'. Allowed transitions: {valid_next}"
+        )
+
+    if new_status == OrderStatus.PAYMENT_CONFIRMED.value:
+        pay_res = await db.execute(select(Payment).where(Payment.order_id == order.id, Payment.status == PaymentStatus.PAID.value))
+        payment = pay_res.scalar_one_or_none()
+        if not payment:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot transition to PAYMENT_CONFIRMED without confirmed payment record."
+            )
+        order.payment_status = PaymentStatus.PAID.value
+
     order.status = new_status
     if new_status == OrderStatus.DELIVERED.value:
         order.payment_status = PaymentStatus.PAID.value

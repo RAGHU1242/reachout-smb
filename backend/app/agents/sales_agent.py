@@ -148,6 +148,43 @@ class SalesAgent:
             "bhaiya", "didi", "hai", "kya", "kitna", "chahiye", "bhejo", "milega", "namaste", "shukriya"
         ])
 
+        # Intent 0A: Payment method query (e.g., "UPI chestha", "GPay undha?", "Payment options?")
+        if any(w in lower for w in ["upi", "gpay", "phonepe", "paytm", "cod", "cash on delivery", "payment ela", "payment mode"]):
+            biz_info = await get_business_information(self.db, self.business_id)
+            tool_calls.append("get_business_information")
+            if is_telugu:
+                reply_text = "మేము UPI (Google Pay, PhonePe, Paytm), Net Banking, మరియు Cash on Delivery (COD) అంగీకరిస్తాము 😊 మీ ఆర్డర్ వివరాలు కన్ఫర్మ్ కాగానే పేమెంట్ వివరాలు పంపుతాము."
+            elif is_hindi:
+                reply_text = "हम UPI (Google Pay, PhonePe, Paytm), नेट बैंकिंग और कैश ऑन डिलीवरी (COD) स्वीकार करते हैं 😊 ऑर्डर विवरण कन्फर्म होने पर पेमेंट डिटेल्स भेजी जाएंगी।"
+            else:
+                reply_text = "We accept all major UPI apps (Google Pay, PhonePe, Paytm), Net Banking, and Cash on Delivery (COD) 😊 Payment details will be shared once order items are confirmed."
+            return {
+                "reply_text": reply_text,
+                "media_url": None,
+                "media_type": None,
+                "is_handoff": False,
+                "recommended_products": [],
+                "tool_calls": tool_calls
+            }
+
+        # Intent 0B: Express delivery / Delivery timeline query (e.g., "tomorrow kavali", "urgent", "eppudu vasthundi")
+        if any(w in lower for w in ["tomorrow", "repu", "urgent", "speed", "fast", "eppudu", "timeline", "jaldi"]):
+            tool_calls.append("get_business_information")
+            if is_telugu:
+                reply_text = "హైదరాబాద్ లోకల్ ఏరియాలలో Same Day లేదా Next Day డెలివరీ చేస్తాము 🚀 మీ ఏరియా/పిన్‌కోడ్ చెప్తే ఖచ్చితమైన డెలివరీ వివరాలు చెప్తాము."
+            elif is_hindi:
+                reply_text = "हैदराबाद स्थानीय क्षेत्रों में सेम डे या नेक्स्ट डे एक्सप्रेस डिलीवरी उपलब्ध है 🚀 कृपया अपनी डिलीवरी लोकेशन बताएं।"
+            else:
+                reply_text = "For Hyderabad local areas, we offer Same Day and Next Day express delivery 🚀 Please share your locality to confirm the earliest slot."
+            return {
+                "reply_text": reply_text,
+                "media_url": None,
+                "media_type": None,
+                "is_handoff": False,
+                "recommended_products": [],
+                "tool_calls": tool_calls
+            }
+
         # Intent 1: Check delivery / Locality questions
         # e.g., "Delivery Miyapur?", "Hyd lo delivery chesthara?", "Kukatpally delivery charges?"
         delivery_localities = ["miyapur", "kukatpally", "gachibowli", "banjara hills", "secunderabad", "hyderabad", "madhapur", "kondapur"]
