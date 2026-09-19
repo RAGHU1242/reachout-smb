@@ -87,54 +87,64 @@ export default function OrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {filtered.map((order) => {
-                  const isSel = selectedOrder?.id === order.id;
-                  return (
-                    <tr
-                      key={order.id}
-                      onClick={() => setSelectedOrder(order)}
-                      className={`cursor-pointer transition-colors ${
-                        isSel ? 'bg-indigo-50/70' : 'hover:bg-slate-50/60'
-                      }`}
-                    >
-                      <td className="p-4 font-mono font-bold text-slate-900">{order.order_number}</td>
-                      <td className="p-4">
-                        <p className="font-semibold text-slate-800">{order.customer_name}</p>
-                        <p className="text-[10px] text-slate-400">{formatDate(order.created_at)}</p>
-                      </td>
-                      <td className="p-4">
-                        <p className="font-bold text-slate-900">{formatCurrency(order.total)}</p>
-                        <p className="text-[10px] text-slate-400">
-                          {order.items.length} item(s) • Del: ₹{order.delivery_fee}
-                        </p>
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            order.status === 'CONFIRMED'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : order.status === 'SHIPPED'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : order.status === 'DELIVERED'
-                              ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`text-[10px] font-semibold ${
-                            order.payment_status === 'PAID' ? 'text-emerald-600' : 'text-amber-600'
-                          }`}
-                        >
-                          {order.payment_status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-xs text-slate-400">Loading orders...</td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-xs text-slate-400">No customer orders found.</td>
+                  </tr>
+                ) : (
+                  filtered.map((order) => {
+                    const isSel = selectedOrder?.id === order.id;
+                    return (
+                      <tr
+                        key={order.id}
+                        onClick={() => setSelectedOrder(order)}
+                        className={`cursor-pointer transition-colors ${
+                          isSel ? 'bg-indigo-50/70' : 'hover:bg-slate-50/60'
+                        }`}
+                      >
+                        <td className="p-4 font-mono font-bold text-slate-900">{order.order_number}</td>
+                        <td className="p-4">
+                          <p className="font-semibold text-slate-800">{order.customer_name || 'Walk-in'}</p>
+                          <p className="text-[10px] text-slate-400">{formatDate(order.created_at)}</p>
+                        </td>
+                        <td className="p-4">
+                          <p className="font-bold text-slate-900">{formatCurrency(order.total)}</p>
+                          <p className="text-[10px] text-slate-400">
+                            {order.items.length} item(s) • Del: {formatCurrency(order.delivery_fee)}
+                          </p>
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              order.status === 'CONFIRMED'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : order.status === 'SHIPPED'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : order.status === 'DELIVERED'
+                                ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`text-[10px] font-semibold ${
+                              order.payment_status === 'PAID' ? 'text-emerald-600' : 'text-amber-600'
+                            }`}
+                          >
+                            {order.payment_status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -155,9 +165,9 @@ export default function OrdersPage() {
 
             {/* Customer & Address */}
             <div className="text-xs space-y-1 bg-slate-50 p-3.5 rounded-xl">
-              <p className="text-slate-500 font-medium">Customer: <strong className="text-slate-900">{selectedOrder.customer_name}</strong></p>
+              <p className="text-slate-500 font-medium">Customer: <strong className="text-slate-900">{selectedOrder.customer_name || 'Walk-in Customer'}</strong></p>
               <p className="text-slate-500 font-medium">Delivery Address:</p>
-              <p className="text-slate-800 font-medium leading-relaxed">{selectedOrder.delivery_address || 'Standard Hyderabad Metro'}</p>
+              <p className="text-slate-800 font-medium leading-relaxed">{selectedOrder.delivery_address || 'No delivery address provided'}</p>
             </div>
 
             {/* Line Items */}

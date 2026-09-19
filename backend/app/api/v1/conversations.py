@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database.session import get_db
-from app.models.models import Conversation, Message, Customer, Business, BusinessMember
+from app.models.models import Conversation, Message, Customer, Business, BusinessMember, Lead, Order
 from app.models.enums import ConversationStatus, MessageSenderType
 from app.schemas.schemas import (
     ConversationResponse, MessageCreate, MessageResponse, HumanHandoffRequest
@@ -23,7 +23,7 @@ async def list_conversations(
     db: AsyncSession = Depends(get_db)
 ):
     stmt = (
-        select(Conversation, Customer.name, Customer.phone)
+        select(Conversation, Customer.name, Customer.phone, Customer.preferred_language)
         .join(Customer, Customer.id == Conversation.customer_id)
         .where(Conversation.business_id == business.id)
     )
@@ -37,12 +37,26 @@ async def list_conversations(
     rows = res.all()
 
     convs = []
-    for conv, c_name, c_phone in rows:
+    for conv, c_name, c_phone, pref_lang in rows:
         # Get latest message
         m_res = await db.execute(
             select(Message).where(Message.conversation_id == conv.id).order_by(Message.created_at.desc()).limit(1)
         )
         latest = m_res.scalar_one_or_none()
+
+        # Get associated lead
+        lead_res = await db.execute(
+            select(Lead).where(
+                (Lead.conversation_id == conv.id) | (Lead.customer_id == conv.customer_id)
+            ).order_by(Lead.created_at.desc()).limit(1)
+        )
+        lead = lead_res.scalar_one_or_none()
+
+        # Get recent order for delivery context
+        ord_res = await db.execute(
+            select(Order).where(Order.customer_id == conv.customer_id).order_by(Order.created_at.desc()).limit(1)
+        )
+        recent_ord = ord_res.scalar_one_or_none()
 
         conv_dict = {
             "id": conv.id,
@@ -56,7 +70,15 @@ async def list_conversations(
             "handoff_reason": conv.handoff_reason,
             "last_message_at": conv.last_message_at,
             "created_at": conv.created_at,
-            "latest_message": MessageResponse.model_validate(latest) if latest else None
+            "latest_message": MessageResponse.model_validate(latest) if latest else None,
+            "preferred_language": pref_lang,
+            "lead_score": lead.score if lead else None,
+            "lead_status": lead.status if lead else None,
+            "lead_product_interest": lead.product_interest if lead else None,
+            "lead_budget": lead.budget if lead else None,
+            "lead_notes": lead.notes if lead else None,
+            "delivery_locality": recent_ord.delivery_address if recent_ord else None,
+            "delivery_fee": recent_ord.delivery_fee if recent_ord else None
         }
         convs.append(ConversationResponse(**conv_dict))
 

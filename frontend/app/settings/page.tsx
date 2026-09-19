@@ -8,22 +8,27 @@ import { formatCurrency } from '@/lib/utils';
 
 export default function SettingsPage() {
   const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [aiSettings, setAiSettings] = useState<any>(null);
   const [newLocality, setNewLocality] = useState('');
   const [newFee, setNewFee] = useState(50);
   const [newPincode, setNewPincode] = useState('');
   const [saved, setSaved] = useState(false);
 
-  const loadZones = async () => {
+  const loadData = async () => {
     try {
-      const data = await apiRequest<DeliveryZone[]>('/api/v1/delivery-zones');
-      setZones(data);
+      const [zData, aiData] = await Promise.all([
+        apiRequest<DeliveryZone[]>('/api/v1/delivery-zones').catch(() => []),
+        apiRequest<any>('/api/v1/businesses/current/ai-settings').catch(() => null),
+      ]);
+      setZones(zData);
+      setAiSettings(aiData);
     } catch (err) {
       console.error(err);
     }
   };
 
   useEffect(() => {
-    loadZones();
+    loadData();
   }, []);
 
   const handleAddZone = async (e: React.FormEvent) => {
@@ -43,7 +48,7 @@ export default function SettingsPage() {
       });
       setNewLocality('');
       setNewPincode('');
-      loadZones();
+      loadData();
     } catch (err) {
       console.error(err);
     }
@@ -145,7 +150,7 @@ export default function SettingsPage() {
               <p className="text-[11px] text-slate-500">Configured model for low-latency conversational tool use</p>
             </div>
             <span className="font-mono font-semibold px-2 py-1 bg-indigo-50 text-indigo-700 rounded border border-indigo-200">
-              gemini-2.5-flash
+              {aiSettings?.model_name || 'gemini-2.5-flash'}
             </span>
           </div>
 

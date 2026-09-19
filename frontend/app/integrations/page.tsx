@@ -8,11 +8,17 @@ export default function IntegrationsPage() {
   const [status, setStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
+  const [igUsername, setIgUsername] = useState('ranifashions_official');
+  const [waPhone, setWaPhone] = useState('+919876543210');
+  const [connectingIg, setConnectingIg] = useState(false);
+  const [connectingWa, setConnectingWa] = useState(false);
 
   const loadStatus = async () => {
     try {
       const data = await apiRequest<any>('/api/v1/integrations/status');
       setStatus(data);
+      if (data?.instagram?.username) setIgUsername(data.instagram.username);
+      if (data?.whatsapp?.username) setWaPhone(data.whatsapp.username);
     } catch (err) {
       console.error(err);
     } finally {
@@ -31,19 +37,29 @@ export default function IntegrationsPage() {
   };
 
   const connectInstagram = async () => {
-    await apiRequest('/api/v1/integrations/instagram/connect', {
-      method: 'POST',
-      body: JSON.stringify({ username: 'ranifashions_official' }),
-    });
-    loadStatus();
+    setConnectingIg(true);
+    try {
+      await apiRequest('/api/v1/integrations/instagram/connect', {
+        method: 'POST',
+        body: JSON.stringify({ username: igUsername.trim() }),
+      });
+      loadStatus();
+    } finally {
+      setConnectingIg(false);
+    }
   };
 
   const connectWhatsApp = async () => {
-    await apiRequest('/api/v1/integrations/whatsapp/connect', {
-      method: 'POST',
-      body: JSON.stringify({ phone_number: '+919876543210' }),
-    });
-    loadStatus();
+    setConnectingWa(true);
+    try {
+      await apiRequest('/api/v1/integrations/whatsapp/connect', {
+        method: 'POST',
+        body: JSON.stringify({ phone_number: waPhone.trim() }),
+      });
+      loadStatus();
+    } finally {
+      setConnectingWa(false);
+    }
   };
 
   return (
@@ -124,12 +140,23 @@ export default function IntegrationsPage() {
             </div>
           </div>
 
-          <button
-            onClick={connectInstagram}
-            className="w-full py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
-          >
-            {status?.instagram?.connected ? 'Reconnect Instagram Account' : 'Connect Instagram Professional'}
-          </button>
+          <div className="space-y-2 pt-2 border-t border-slate-100">
+            <label className="text-[10px] font-bold uppercase text-slate-500">Instagram Handle</label>
+            <input
+              type="text"
+              value={igUsername}
+              onChange={(e) => setIgUsername(e.target.value)}
+              placeholder="your_business_handle"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+            />
+            <button
+              onClick={connectInstagram}
+              disabled={connectingIg || !igUsername.trim()}
+              className="w-full py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-90 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
+            >
+              {connectingIg ? 'Connecting...' : status?.instagram?.connected ? 'Update / Reconnect Handle' : 'Connect Instagram Professional'}
+            </button>
+          </div>
         </div>
 
         {/* WhatsApp Cloud API Card */}
@@ -200,12 +227,23 @@ export default function IntegrationsPage() {
             </div>
           </div>
 
-          <button
-            onClick={connectWhatsApp}
-            className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
-          >
-            {status?.whatsapp?.connected ? 'Reconnect WhatsApp Number' : 'Connect Dedicated Business Phone'}
-          </button>
+          <div className="space-y-2 pt-2 border-t border-slate-100">
+            <label className="text-[10px] font-bold uppercase text-slate-500">Business WhatsApp Phone</label>
+            <input
+              type="tel"
+              value={waPhone}
+              onChange={(e) => setWaPhone(e.target.value)}
+              placeholder="+919876543210"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium font-mono"
+            />
+            <button
+              onClick={connectWhatsApp}
+              disabled={connectingWa || !waPhone.trim()}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
+            >
+              {connectingWa ? 'Connecting...' : status?.whatsapp?.connected ? 'Update / Reconnect Phone' : 'Connect Dedicated Business Phone'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

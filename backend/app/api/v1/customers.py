@@ -79,3 +79,20 @@ async def update_customer(
     await db.commit()
     await db.refresh(cust)
     return CustomerResponse.model_validate(cust)
+
+@router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_customer(
+    customer_id: str,
+    business: Business = Depends(get_current_business),
+    _member: BusinessMember = Depends(require_roles([RoleEnum.OWNER, RoleEnum.ADMIN])),
+    db: AsyncSession = Depends(get_db)
+):
+    res = await db.execute(
+        select(Customer).where(Customer.id == customer_id, Customer.business_id == business.id)
+    )
+    cust = res.scalar_one_or_none()
+    if not cust:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    await db.delete(cust)
+    await db.commit()
+    return None

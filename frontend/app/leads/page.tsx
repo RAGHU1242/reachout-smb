@@ -11,13 +11,17 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadLeads = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const data = await apiRequest<Lead[]>('/api/v1/leads');
       setLeads(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'Failed to load leads pipeline');
     } finally {
       setLoading(false);
     }
@@ -86,6 +90,19 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      {/* Error Alert */}
+      {error && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-xs text-rose-700">
+          <span>{error}</span>
+          <button
+            onClick={loadLeads}
+            className="px-3 py-1 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-500 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Leads Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
@@ -101,16 +118,25 @@ export default function LeadsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {filtered.map((lead) => (
-                <tr key={lead.id} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="p-4">
-                    <p className="font-bold text-slate-900">{lead.customer_name}</p>
-                    <p className="text-[10px] text-slate-400">{formatDate(lead.created_at)}</p>
-                  </td>
-                  <td className="p-4">
-                    <p className="font-semibold text-slate-800">{lead.product_interest || 'General Saree Enquiry'}</p>
-                    <p className="text-[10px] text-slate-400 line-clamp-1">{lead.notes}</p>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-xs text-slate-400">Loading leads...</td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-xs text-slate-400">No leads found in pipeline.</td>
+                </tr>
+              ) : (
+                filtered.map((lead) => (
+                  <tr key={lead.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="p-4">
+                      <p className="font-bold text-slate-900">{lead.customer_name || 'Customer'}</p>
+                      <p className="text-[10px] text-slate-400">{formatDate(lead.created_at)}</p>
+                    </td>
+                    <td className="p-4">
+                      <p className="font-semibold text-slate-800">{lead.product_interest || 'General Enquiry'}</p>
+                      <p className="text-[10px] text-slate-400 line-clamp-1">{lead.notes}</p>
+                    </td>
                   <td className="p-4 font-semibold">
                     {lead.budget ? formatCurrency(lead.budget) : 'Not specified'}
                   </td>
@@ -161,7 +187,8 @@ export default function LeadsPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
             </tbody>
           </table>
         </div>

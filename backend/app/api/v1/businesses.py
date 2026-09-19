@@ -11,7 +11,7 @@ from app.models.models import (
 from app.models.enums import RoleEnum
 from app.schemas.schemas import (
     BusinessCreate, BusinessResponse, BusinessUpdate, OnboardingRequest,
-    BusinessSettingsSchema, AISettingsSchema
+    BusinessSettingsSchema, AISettingsSchema, BusinessMemberResponse, BusinessMemberInvite
 )
 from app.core.dependencies import get_current_user, get_current_business, require_roles
 
@@ -219,3 +219,74 @@ async def update_ai_settings(
     await db.commit()
     await db.refresh(s)
     return AISettingsSchema.model_validate(s)
+
+@router.get("/current/members", response_model=List[BusinessMemberResponse])
+async def list_business_members(
+    business: Business = Depends(get_current_business),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = (
+        select(BusinessMember, User.email, User.full_name)
+        .join(User, User.id == BusinessMember.user_id)
+        .where(BusinessMember.business_id == business.id)
+    )
+    res = await db.execute(stmt)
+    rows = res.all()
+    return [
+        BusinessMemberResponse(
+            id=m.id,
+            business_id=m.business_id,
+            user_id=m.user_id,
+            email=u_email,
+            full_name=u_name,
+            role=m.role,
+            status="Active",
+            created_at=m.created_at
+        ) for m, u_email, u_name in rows
+    ]
+
+@router.post("/current/members", response_model=BusinessMemberResponse)
+async def add_business_member(
+    data: BusinessMemberInvite,
+    business: Business = Depends(get_current_business),
+    _member: BusinessMember = Depends(require_roles([RoleEnum.OWNER, RoleEnum.ADMIN])),
+    db: AsyncSession = Depends(get_db)
+):
+    u_res = await db.execute(select(User).where(User.email == data.email))
+    user = u_res.scalar_one_or_none()
+    if not user:
+        from app.core.security import get_password_hash
+        user = User(
+            email=data.email,
+            hashed_password=get_password_hash("ReachOut@2026"),
+            full_name=data.full_name,
+            is_active=True
+        )
+        db.add(user)
+        await db.flush()
+
+    mem_res = await db.execute(
+        select(BusinessMember).where(BusinessMember.business_id == business.id, BusinessMember.user_id == user.id)
+    )
+    if mem_res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="User is already a member of this business")
+
+    new_mem = BusinessMember(
+        business_id=business.id,
+        user_id=user.id,
+        role=data.role
+    )
+    db.add(new_mem)
+    await db.commit()
+    await db.refresh(new_mem)
+
+    return BusinessMemberResponse(
+        id=new_mem.id,
+        business_id=new_mem.business_id,
+        user_id=new_mem.user_id,
+        email=user.email,
+        full_name=user.full_name,
+        role=new_mem.role,
+        status="Active",
+        created_at=new_mem.created_at
+    )

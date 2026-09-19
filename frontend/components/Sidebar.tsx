@@ -19,6 +19,9 @@ import {
   Sparkles,
   Bot
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { apiRequest } from '@/lib/api';
+import { Business } from '@/types';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -39,6 +42,17 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [business, setBusiness] = useState<{ name: string; city: string } | null>(null);
+
+  useEffect(() => {
+    apiRequest<Business>('/api/v1/businesses/current')
+      .then((b) => setBusiness({ name: b.name, city: b.city || 'Hyderabad' }))
+      .catch(() => {
+        // Fallback to cached or default
+        const cached = typeof window !== 'undefined' ? localStorage.getItem('reachout_business_name') : null;
+        if (cached) setBusiness({ name: cached, city: 'Hyderabad' });
+      });
+  }, []);
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 select-none">
@@ -107,7 +121,9 @@ export function Sidebar() {
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
           <span className="text-xs text-slate-300 font-medium">AI Active (Telugu, Hindi, EN)</span>
         </div>
-        <p className="text-[11px] text-slate-500 mt-1">Rani Fashions (Hyderabad)</p>
+        <p className="text-[11px] text-slate-500 mt-1 truncate">
+          {business ? `${business.name} (${business.city})` : 'ReachOut Active Hub'}
+        </p>
       </div>
     </aside>
   );

@@ -76,6 +76,22 @@ class AISettingsSchema(BaseModel):
     custom_prompt: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
+class BusinessMemberResponse(BaseModel):
+    id: str
+    business_id: str
+    user_id: str
+    email: str
+    full_name: str
+    role: str
+    status: str = "Active"
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class BusinessMemberInvite(BaseModel):
+    email: str
+    full_name: str
+    role: str = "STAFF"
+
 class BusinessResponse(BusinessBase):
     id: str
     slug: str
@@ -243,6 +259,14 @@ class ConversationResponse(BaseModel):
     last_message_at: datetime
     created_at: datetime
     latest_message: Optional[MessageResponse] = None
+    preferred_language: Optional[str] = None
+    lead_score: Optional[int] = None
+    lead_status: Optional[str] = None
+    lead_product_interest: Optional[str] = None
+    lead_budget: Optional[float] = None
+    lead_notes: Optional[str] = None
+    delivery_locality: Optional[str] = None
+    delivery_fee: Optional[float] = None
     model_config = ConfigDict(from_attributes=True)
 
 class HumanHandoffRequest(BaseModel):
@@ -393,7 +417,20 @@ class FollowUpResponse(BaseModel):
 # Analytics
 # -------------------------------------------------------------
 
+class HourlyVolumeItem(BaseModel):
+    time: str
+    count: int
+    percentage: float
+
+class TopProductItem(BaseModel):
+    name: str
+    price: float
+    orders: int
+    enquiries: int
+
 class AnalyticsOverview(BaseModel):
+    business_name: Optional[str] = None
+    city: Optional[str] = None
     total_revenue: float
     total_orders: int
     new_leads: int
@@ -405,6 +442,9 @@ class AnalyticsOverview(BaseModel):
     ai_handling_rate: float
     recent_orders: List[OrderResponse] = []
     hot_leads_list: List[LeadResponse] = []
+    hourly_volume: List[HourlyVolumeItem] = []
+    top_products: List[TopProductItem] = []
+    insights: List[str] = []
 
 # -------------------------------------------------------------
 # Simulator

@@ -22,14 +22,20 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 export default function DashboardPage() {
   const [data, setData] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await apiRequest<AnalyticsOverview>('/api/v1/analytics/overview');
       setData(res);
-    } catch (err) {
+      if (res.business_name && typeof window !== 'undefined') {
+        localStorage.setItem('reachout_business_name', res.business_name);
+      }
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'Failed to load live analytics data');
     } finally {
       setLoading(false);
     }
@@ -41,6 +47,19 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Error Banner */}
+      {error && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-xs text-rose-700">
+          <span>{error}</span>
+          <button
+            onClick={loadData}
+            className="px-3 py-1 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-500 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Top Banner with Quick Actions */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-6 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
         <div>
@@ -48,9 +67,9 @@ export default function DashboardPage() {
             <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
               Live & Autonomous
             </span>
-            <span className="text-xs text-slate-400">• Hyderabad Business Pilot</span>
+            <span className="text-xs text-slate-400">• {data?.city || 'Active Business'} Hub</span>
           </div>
-          <h2 className="text-2xl font-bold mt-1 tracking-tight">Rani Fashions — AI Sales Hub</h2>
+          <h2 className="text-2xl font-bold mt-1 tracking-tight">{data?.business_name || 'ReachOut SMB'} — AI Sales Hub</h2>
           <p className="text-xs text-slate-400 mt-1 max-w-xl">
             AI Assistant is handling customer inquiries in Telugu, Hindi, and English across Instagram DM and WhatsApp.
           </p>
@@ -87,8 +106,8 @@ export default function DashboardPage() {
           <p className="text-2xl font-black text-slate-900 tracking-tight">
             {formatCurrency(data?.total_revenue || 0)}
           </p>
-          <p className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-            <span>+24.5%</span> <span className="text-slate-400 font-normal">from automated DMs</span>
+          <p className="text-[11px] text-slate-500 font-medium mt-1">
+            Confirmed from {data?.total_orders || 0} order(s)
           </p>
         </div>
 
@@ -120,7 +139,7 @@ export default function DashboardPage() {
             {data?.hot_leads || 0}
           </p>
           <p className="text-[11px] text-slate-500 mt-1 font-medium">
-            {data?.new_leads || 0} new leads qualified by AI
+            {data?.new_leads || 0} new lead(s) qualified by AI
           </p>
         </div>
 
@@ -136,7 +155,7 @@ export default function DashboardPage() {
             {data?.ai_handling_rate || 100}%
           </p>
           <p className="text-[11px] text-slate-500 mt-1 font-medium">
-            {data?.human_handoff_count || 0} staff takeovers
+            {data?.human_handoff_count || 0} staff takeover(s)
           </p>
         </div>
       </div>
@@ -148,15 +167,17 @@ export default function DashboardPage() {
         </div>
         <div className="space-y-1">
           <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900">AI Business Intelligence & Insights</h4>
-          <p className="text-xs text-indigo-800 leading-relaxed">
-            • <strong>High Demand:</strong> 18 customer enquiries asked for sarees priced below ₹1,500.
-          </p>
-          <p className="text-xs text-indigo-800 leading-relaxed">
-            • <strong>Top Converting Item:</strong> <em>Crimson Kanjeevaram Silk Saree</em> (₹1,299) generated 6 orders.
-          </p>
-          <p className="text-xs text-indigo-800 leading-relaxed">
-            • <strong>Delivery Hotspots:</strong> Miyapur (₹50) and Kukatpally (₹50) account for 70% of delivery requests.
-          </p>
+          {data?.insights && data.insights.length > 0 ? (
+            data.insights.map((insight, idx) => (
+              <p key={idx} className="text-xs text-indigo-800 leading-relaxed">
+                • {insight}
+              </p>
+            ))
+          ) : (
+            <p className="text-xs text-indigo-700/80 italic leading-relaxed">
+              No business insights generated yet. Automated intelligence will emerge once live customer conversations and product orders are recorded.
+            </p>
+          )}
         </div>
       </div>
 

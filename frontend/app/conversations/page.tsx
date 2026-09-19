@@ -203,6 +203,11 @@ export default function ConversationsPage() {
               </button>
             );
           })}
+          {filteredConvs.length === 0 && (
+            <div className="p-8 text-center text-xs text-slate-400">
+              No conversations found.
+            </div>
+          )}
         </div>
       </div>
 
@@ -352,7 +357,7 @@ export default function ConversationsPage() {
             </div>
             <div className="p-3 bg-white rounded-xl border border-slate-200">
               <span className="text-[10px] text-slate-400 font-semibold uppercase">Language</span>
-              <p className="text-xs font-bold text-indigo-600 mt-0.5">Telugu / EN</p>
+              <p className="text-xs font-bold text-indigo-600 mt-0.5">{selectedConv.preferred_language || 'Auto-Detect'}</p>
             </div>
           </div>
 
@@ -363,12 +368,22 @@ export default function ConversationsPage() {
                 <Flame className="w-3.5 h-3.5 text-rose-500" />
                 <span>AI Lead Score</span>
               </span>
-              <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                HOT (85/100)
-              </span>
+              {selectedConv.lead_score !== undefined && selectedConv.lead_score !== null ? (
+                <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                  {selectedConv.lead_status || 'LEAD'} ({selectedConv.lead_score}/100)
+                </span>
+              ) : (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                  Pending Qualification
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-slate-500 leading-tight">
-              Customer inquired about red sarees under ₹1,500 and delivery to Miyapur. High purchase intent detected.
+              {selectedConv.lead_notes
+                ? selectedConv.lead_notes
+                : selectedConv.lead_product_interest
+                ? `Inquired about: ${selectedConv.lead_product_interest}${selectedConv.lead_budget ? ` (Budget: ${formatCurrency(selectedConv.lead_budget)})` : ''}`
+                : 'Customer conversation actively monitored for product interest and purchase intent.'}
             </p>
           </div>
 
@@ -376,10 +391,18 @@ export default function ConversationsPage() {
           <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
               <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Delivery Zone</span>
+              <span>Delivery Information</span>
             </div>
-            <p className="text-xs text-slate-600">Miyapur, Hyderabad</p>
-            <p className="text-[11px] text-emerald-600 font-semibold">Standard Delivery: ₹50</p>
+            {selectedConv.delivery_locality ? (
+              <>
+                <p className="text-xs text-slate-600">{selectedConv.delivery_locality}</p>
+                {selectedConv.delivery_fee !== undefined && selectedConv.delivery_fee !== null && (
+                  <p className="text-[11px] text-emerald-600 font-semibold">Delivery Fee: {formatCurrency(selectedConv.delivery_fee)}</p>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-slate-400 italic">No delivery address requested yet</p>
+            )}
           </div>
 
           {/* Automation Safety */}

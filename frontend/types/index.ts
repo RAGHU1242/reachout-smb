@@ -89,6 +89,14 @@ export interface Conversation {
   last_message_at: string;
   created_at: string;
   latest_message?: Message;
+  preferred_language?: string;
+  lead_score?: number;
+  lead_status?: string;
+  lead_product_interest?: string;
+  lead_budget?: number;
+  lead_notes?: string;
+  delivery_locality?: string;
+  delivery_fee?: number;
 }
 
 export interface Lead {
@@ -158,7 +166,33 @@ export interface FollowUp {
   created_at: string;
 }
 
+export interface TeamMember {
+  id: string;
+  business_id: string;
+  user_id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  status: string;
+  created_at: string;
+}
+
+export interface HourlyVolumeItem {
+  time: string;
+  count: number;
+  percentage: number;
+}
+
+export interface TopProductItem {
+  name: string;
+  price: number;
+  orders: number;
+  enquiries: number;
+}
+
 export interface AnalyticsOverview {
+  business_name?: string;
+  city?: string;
   total_revenue: number;
   total_orders: number;
   new_leads: number;
@@ -170,6 +204,9 @@ export interface AnalyticsOverview {
   ai_handling_rate: number;
   recent_orders: Order[];
   hot_leads_list: Lead[];
+  hourly_volume?: HourlyVolumeItem[];
+  top_products?: TopProductItem[];
+  insights?: string[];
 }
 
 export interface SimulatorMessageResponse {
